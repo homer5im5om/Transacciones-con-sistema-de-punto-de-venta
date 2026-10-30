@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 
-class conexion():
+class Conexion():
     def __init__(self):
         self.host = '127.0.0.1'
         self.user = 'aplicacion_pdv'
