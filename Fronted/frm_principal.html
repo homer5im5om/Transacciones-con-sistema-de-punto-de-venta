@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-dark: #1e3a8a;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --bg-body: #f8fafc;
+            --bg-panel: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 16px;
+            gap: 12px;
+        }
+
+        .header-panel {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 16px;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: 0 4px 10px rgba(29, 78, 216, 0.2);
+        }
+
+        .header-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-group label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #bfdbfe;
+        }
+
+        .header-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+
+        .scan-panel {
+            background: var(--bg-panel);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            border: 1px solid var(--border);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .barcode-group {
+            width: 250px;
+        }
+
+        .qty-group {
+            width: 100px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            color: var(--text-main);
+            background-color: var(--bg-body);
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent);
+            background-color: var(--bg-panel);
+            outline: none;
+        }
+
+
+        .grid-panel {
+            flex-grow: 1;
+            background: var(--bg-panel);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        td {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        td:first-child { font-family: monospace; color: var(--text-muted); }
+        td:last-child { font-weight: 600; color: var(--primary-dark); }
+
+
+        .footer-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+
+        .btn-save {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            height: fit-content;
+            transition: background 0.2s;
+        }
+
+        .btn-save:hover {
+            background: #059669;
+        }
+
+        .totals-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 24px;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .total-row.final {
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+            margin-top: 4px;
+            font-size: 1.25rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-panel">
+        <div class="header-group">
+            <label>Folio</label>
+            <input type="text" readonly value="">
+        </div>
+        <div class="header-group">
+            <label>Empleado</label>
+            <input type="text" readonly value="Emanuel Zavala"> <!--Cajero -->
+        </div>
+        <div class="header-group">
+            <label>Fecha</label>
+            <input type="text" readonly value="">
+        </div>
+    </div>
+
+    <div class="scan-panel">
+        <div class="input-group barcode-group">
+            <label>Código</label>
+            <input type="text" id="codigo_barras" autofocus autocomplete="off">
+        </div>
+        <div class="input-group qty-group">
+            <label>Cantidad</label>
+            <input type="number" id="cantidad_producto" value="1" min="1">
+        </div>
+    </div>
+
+    <div class="grid-panel">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clave</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Cant.</th>
+                        <th>Importe</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla_productos">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="footer-panel">
+        <button class="btn-save">Guardar (F10)</button>
+
+        <div class="totals-card">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <span id="subtotal_val">$0.00</span>
+            </div>
+            <div class="total-row">
+                <span>IVA</span>
+                <span id="iva_val">$0.00</span>
+            </div>
+            <div class="total-row final">
+                <span>Total</span>
+                <span id="total_val">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="/eel.js"></script>
+    <script>
+        document.getElementById('codigo_barras').focus();
+    </script>
+</body>
+</html>
