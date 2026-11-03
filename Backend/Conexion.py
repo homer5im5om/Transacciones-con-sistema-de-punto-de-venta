@@ -25,5 +25,6 @@ class Conexion():
             return None
 
     def desconectar(self):
-        if self.conexion.is_connected():
+        if self.conexion is not None and self.conexion.is_connected():
             self.conexion.close()
+            self.conexion = None

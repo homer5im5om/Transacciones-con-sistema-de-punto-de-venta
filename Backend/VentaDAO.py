@@ -1,4 +1,4 @@
-from Conexion import Conexion
+from Backend.Conexion import Conexion
 
 class VentaDAO():
     def __init__(self):
@@ -26,19 +26,21 @@ class VentaDAO():
         Connect = self.db.conectar()
         producto = None
         if Connect:
+            cursor = None
             try:
                 cursor = Connect.cursor(dictionary=True)
-
                 sql = """select codigodebarras, descripcion, precio, stock from productos where codigodebarras = %s"""
-
                 cursor.execute(sql, (codigodebarras,))
-
                 producto = cursor.fetchone()
+
+                if producto:
+                    producto['precio'] = float(producto['precio'])
 
             except Exception as e:
                 print(e)
             finally:
-                cursor.close()
+                if cursor is not None:
+                    cursor.close()
                 self.db.desconectar()
         return producto
 
@@ -78,3 +80,22 @@ class VentaDAO():
         finally:
             cursor.close()
             self.db.desconectar()
+
+    def obtenerSiguienteFolio(self):
+        Connect = self.db.conectar()
+        siguiente_folio = 1
+        if Connect:
+            try:
+                cursor = Connect.cursor()
+                cursor.execute("SELECT MAX(id_venta) FROM venta")
+                resultado = cursor.fetchone()
+
+                if resultado[0] is not None:
+                    siguiente_folio = resultado[0] + 1
+
+            except Exception as e:
+                print(e)
+            finally:
+                cursor.close()
+                self.db.desconectar()
+        return siguiente_folio

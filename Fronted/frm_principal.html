@@ -224,15 +224,15 @@
     <div class="header-panel">
         <div class="header-group">
             <label>Folio</label>
-            <input type="text" readonly value="">
+            <input type="text" id="folio_val" readonly value="">
         </div>
         <div class="header-group">
             <label>Empleado</label>
-            <input type="text" readonly value="Emanuel Zavala"> <!--Cajero -->
+            <input type="text" readonly value="Emanuel Zavala">
         </div>
         <div class="header-group">
             <label>Fecha</label>
-            <input type="text" readonly value="">
+            <input type="text" id="fecha_val" readonly value="">
         </div>
     </div>
 
@@ -285,8 +285,104 @@
     </div>
 
     <script type="text/javascript" src="/eel.js"></script>
-    <script>
-        document.getElementById('codigo_barras').focus();
-    </script>
+<script>
+    let carrito = [];
+    window.onload = async function() {
+        let hoy = new Date();
+        document.getElementById('fecha_val').value = hoy.toLocaleDateString('es-MX');
+
+        let folio = await eel.obtener_siguiente_folio()();
+        document.getElementById('folio_val').value = String(folio).padStart(5, '0');
+    };
+    document.getElementById('codigo_barras').addEventListener('keypress', async function(e) {
+        if (e.key === 'Enter') {
+            let codigo = this.value.trim();
+            let cantidadInput = document.getElementById('cantidad_producto');
+            let cantidad = parseInt(cantidadInput.value) || 1;
+
+            if (codigo !== '') {
+                let producto = await eel.buscar_producto(codigo)();
+
+                if (producto) {
+                    agregarAlCarrito(producto, cantidad);
+                    this.value = '';
+                    cantidadInput.value = '1';
+                    actualizarInterfaz();
+                } else {
+                    alert("Producto no encontrado en la base de datos.");
+                    this.select();
+                }
+            }
+        }
+    });
+
+    function agregarAlCarrito(producto, cantidad) {
+        let existente = carrito.find(item => item.codigodebarras === producto.codigodebarras);
+        if (existente) {
+            existente.cantidad += cantidad;
+            existente.importe = existente.cantidad * existente.unit_price;
+        } else {
+            carrito.push({
+                codigodebarras: producto.codigodebarras,
+                descripcion: producto.descripcion,
+                cantidad: cantidad,
+                unit_price: parseFloat(producto.precio),
+                importe: parseFloat(producto.precio) * cantidad
+            });
+        }
+    }
+
+    function actualizarInterfaz() {
+        let tbody = document.getElementById('tabla_productos');
+        tbody.innerHTML = '';
+
+        let subtotal = 0;
+
+        carrito.forEach(item => {
+            subtotal += item.importe;
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.codigodebarras}</td>
+                <td>${item.descripcion}</td>
+                <td>$${item.unit_price.toFixed(2)}</td>
+                <td>${item.cantidad}</td>
+                <td>$${item.importe.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        let iva = subtotal * 0.16;
+        let total = subtotal + iva;
+
+        document.getElementById('subtotal_val').innerText = `$${subtotal.toFixed(2)}`;
+        document.getElementById('iva_val').innerText = `$${iva.toFixed(2)}`;
+        document.getElementById('total_val').innerText = `$${total.toFixed(2)}`;
+    }
+
+    document.querySelector('.btn-save').addEventListener('click', async function() {
+        if (carrito.length === 0) return alert("El carrito está vacío.");
+
+        let subtotal = carrito.reduce((sum, item) => sum + item.importe, 0);
+        let iva = subtotal * 0.16;
+        let total = subtotal + iva;
+
+
+        let exito = await eel.guardar_venta(subtotal, iva, total, carrito)();
+
+        if (exito) {
+            alert("Venta guardada correctamente.");
+            let nuevoFolio = await eel.obtener_siguiente_folio()();
+            document.getElementById('folio_val').value = String(nuevoFolio).padStart(5, '0');
+            carrito = [];
+            actualizarInterfaz();
+            document.getElementById('subtotal_val').innerText = '$0.00';
+            document.getElementById('iva_val').innerText = '$0.00';
+            document.getElementById('total_val').innerText = '$0.00';
+            document.getElementById('codigo_barras').focus();
+        } else {
+            alert("Error de transacción en la base de datos.");
+        }
+    });
+</script>
 </body>
 </html>
