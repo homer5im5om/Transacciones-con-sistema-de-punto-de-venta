@@ -216,6 +216,20 @@
             color: var(--primary-dark);
             font-weight: 700;
         }
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-delete:hover {
+            background-color: #dc2626;
+        }
 
     </style>
 </head>
@@ -257,6 +271,7 @@
                         <th>Precio</th>
                         <th>Cant.</th>
                         <th>Importe</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="tabla_productos">
@@ -287,6 +302,7 @@
     <script type="text/javascript" src="/eel.js"></script>
 <script>
     let carrito = [];
+
     window.onload = async function() {
         let hoy = new Date();
         document.getElementById('fecha_val').value = hoy.toLocaleDateString('es-MX');
@@ -294,43 +310,63 @@
         let folio = await eel.obtener_siguiente_folio()();
         document.getElementById('folio_val').value = String(folio).padStart(5, '0');
     };
-    document.getElementById('codigo_barras').addEventListener('keypress', async function(e) {
-        if (e.key === 'Enter') {
-            let codigo = this.value.trim();
-            let cantidadInput = document.getElementById('cantidad_producto');
-            let cantidad = parseInt(cantidadInput.value) || 1;
 
-            if (codigo !== '') {
-                let producto = await eel.buscar_producto(codigo)();
+    async function procesarEntrada(esDesdeCantidad) {
+        let inputCodigo = document.getElementById('codigo_barras');
+        let inputCantidad = document.getElementById('cantidad_producto');
 
-                if (producto) {
-                    agregarAlCarrito(producto, cantidad);
-                    this.value = '';
-                    cantidadInput.value = '1';
-                    actualizarInterfaz();
+        let codigo = inputCodigo.value.trim();
+        let cantidad = parseInt(inputCantidad.value) || 1;
+
+        if (codigo !== '') {
+            let producto = await eel.buscar_producto(codigo)();
+
+            if (producto) {
+                let existente = carrito.find(item => item.codigodebarras === producto.codigodebarras);
+
+                if (existente) {
+                    if (esDesdeCantidad) {
+                        existente.cantidad = cantidad;
+                    } else {
+                        existente.cantidad += cantidad;
+                    }
+                    existente.importe = existente.cantidad * existente.unit_price;
                 } else {
-                    alert("Producto no encontrado en la base de datos.");
-                    this.select();
+                    carrito.push({
+                        codigodebarras: producto.codigodebarras,
+                        descripcion: producto.descripcion,
+                        cantidad: cantidad,
+                        unit_price: parseFloat(producto.precio),
+                        importe: parseFloat(producto.precio) * cantidad
+                    });
                 }
+
+                inputCodigo.select();
+
+                if (esDesdeCantidad) {
+                    inputCantidad.value = '1';
+                    inputCodigo.focus();
+                }
+
+                actualizarInterfaz();
+            } else {
+                alert("Producto no encontrado en la base de datos.");
+                inputCodigo.select();
             }
+        }
+    }
+
+    document.getElementById('codigo_barras').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            procesarEntrada(false);
         }
     });
 
-    function agregarAlCarrito(producto, cantidad) {
-        let existente = carrito.find(item => item.codigodebarras === producto.codigodebarras);
-        if (existente) {
-            existente.cantidad += cantidad;
-            existente.importe = existente.cantidad * existente.unit_price;
-        } else {
-            carrito.push({
-                codigodebarras: producto.codigodebarras,
-                descripcion: producto.descripcion,
-                cantidad: cantidad,
-                unit_price: parseFloat(producto.precio),
-                importe: parseFloat(producto.precio) * cantidad
-            });
+    document.getElementById('cantidad_producto').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            procesarEntrada(true);
         }
-    }
+    });
 
     function actualizarInterfaz() {
         let tbody = document.getElementById('tabla_productos');
@@ -347,6 +383,9 @@
                 <td>$${item.unit_price.toFixed(2)}</td>
                 <td>${item.cantidad}</td>
                 <td>$${item.importe.toFixed(2)}</td>
+                <td style="text-align: right;">
+                    <button class="btn-delete" onclick="eliminarDelCarrito('${item.codigodebarras}')">X</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
@@ -358,6 +397,12 @@
         document.getElementById('iva_val').innerText = `$${iva.toFixed(2)}`;
         document.getElementById('total_val').innerText = `$${total.toFixed(2)}`;
     }
+    function eliminarDelCarrito(codigo) {
+        carrito = carrito.filter(item => item.codigodebarras !== codigo);
+        actualizarInterfaz();
+
+        document.getElementById('codigo_barras').focus();
+    }
 
     document.querySelector('.btn-save').addEventListener('click', async function() {
         if (carrito.length === 0) return alert("El carrito está vacío.");
@@ -366,21 +411,31 @@
         let iva = subtotal * 0.16;
         let total = subtotal + iva;
 
-
         let exito = await eel.guardar_venta(subtotal, iva, total, carrito)();
 
         if (exito) {
             alert("Venta guardada correctamente.");
             let nuevoFolio = await eel.obtener_siguiente_folio()();
             document.getElementById('folio_val').value = String(nuevoFolio).padStart(5, '0');
+
             carrito = [];
             actualizarInterfaz();
+
             document.getElementById('subtotal_val').innerText = '$0.00';
             document.getElementById('iva_val').innerText = '$0.00';
             document.getElementById('total_val').innerText = '$0.00';
-            document.getElementById('codigo_barras').focus();
+
+            let inputCodigo = document.getElementById('codigo_barras');
+            inputCodigo.value = '';
+            inputCodigo.focus();
         } else {
             alert("Error de transacción en la base de datos.");
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F10') {
+            e.preventDefault();
+            document.querySelector('.btn-save').click();
         }
     });
 </script>
